@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Exact Print Annotations in GHC (HIW 2021)</title>
+<meta name="author" content="(Alan Zimmerman)"/>
+<style type="text/css">
+.underline { text-decoration: underline; }
+</style>
+<link rel="stylesheet" href="file:///home/alanz/mysrc/github/alanz/hiw2021/dist/reveal.css"/>
+
+<link rel="stylesheet" href="file:///home/alanz/mysrc/github/alanz/hiw2021/dist/theme/white.css" id="theme"/>
+
+<link rel="stylesheet" href="./local.css"/>
+</head>
+<body>
+<div class="reveal">
+<div class="slides">
+
+<section>
+<section id="slide-org722d61c">
+<h2 id="org722d61c">Exact Print Annotations in GHC</h2>
+<ul>
+<li>Alan Zimmerman</li>
+<li><a href="https://twitter.com/@alan_zimm"><code class="src src-haskell"><span style="color: #a0522d;">@</span>alan_zimm</code></a></li>
+
+</ul>
+
+<aside class="notes">
+<p>
+If you recall I spoke last year at HIW, about the plan to move the
+exact print annotations and their processing into GHC. Today I will
+report on the results of that effort.
+</p>
+
+</aside>
+
+</section>
+</section>
+<section>
+<section id="slide-orge48fc3d">
+<h2 id="orge48fc3d">Overview</h2>
+<div class="outline-text-2" id="text-orge48fc3d">
+</div>
+</section>
+</section>
+<section>
+<section id="slide-org9cb4064">
+<h3 id="org9cb4064">Exact Printing</h3>
+<p class="fragment appear">
+So if you write <code class="src src-haskell">0x01</code>, GHC represents this as an integral 1, but also
+stores the original string.
+</p>
+
+<div class="org-src-container">
+
+<pre  class="fragment appear" ><code trim><span style="color: #4169e1;">{-# Language CPP #-}</span>
+</code></pre>
+</div>
+
+<aside class="notes">
+<p>
+But first an overview of what exact printing is, and why it is
+important for tooling.
+</p>
+
+<p>
+As its name suggests, exact printing aims to reproduce exactly the
+original source of a file parsed by GHC.
+</p>
+
+<p>
+It does this by storing the exact original forms and locations of all
+parts of the original.
+</p>
+
+</aside>
+
+</section>
+</section>
+<section>
+<section id="slide-org62cf8c1">
+<h3 id="org62cf8c1">For Tooling</h3>
+<div class="org-src-container">
+
+<pre  class="src src-haskell" ><code trim><span style="color: #0000ff;">foo</span> xxx <span style="color: #a0522d;">=</span> <span style="color: #a020f0;">let</span> a <span style="color: #a0522d;">=</span> 1
+              b <span style="color: #a0522d;">=</span> 2
+          <span style="color: #a020f0;">in</span> xxx <span style="color: #a0522d;">+</span> a <span style="color: #a0522d;">+</span> b
+</code></pre>
+</div>
+
+<div class="org-src-container">
+
+<pre  class="fragment appear" ><code trim><span style="color: #0000ff;">foo</span> xxxlonger <span style="color: #a0522d;">=</span> <span style="color: #a020f0;">let</span> a <span style="color: #a0522d;">=</span> 1
+                    b <span style="color: #a0522d;">=</span> 2
+                <span style="color: #a020f0;">in</span> xxxlonger <span style="color: #a0522d;">+</span> a <span style="color: #a0522d;">+</span> b
+</code></pre>
+</div>
+
+<aside class="notes">
+<p>
+Exact printing in GHC has a further goal though, to allow the parsed
+AST to be modified, and then exact printed so that all the unchanged
+parts remain exactly the same. This allows us to write tools to modify
+code, e.g. adding a new import, without disturbing all the rest of the
+file.
+</p>
+
+<p>
+This is complicated by the fact that haskell is layout sensitive, so
+special care must be taken when moving a piece of code from one place
+to another where its indentation may change.
+</p>
+
+<p>
+One feature in recent GHCs is that we explicitly test that we get the
+same AST back if we parse the GHC pretty print output.  We will not
+get the same layout, but it means a freshly-constructed (by tooling)
+piece of AST can be inserted with high confidence that the rendered
+source will represent what we want.
+</p>
+
+</aside>
+
+</section>
+</section>
+<section>
+<section id="slide-org20ffe7a">
+<h2 id="org20ffe7a"><code class="src src-haskell">ghc<span style="color: #0000ff;">-</span>exactprint <span style="color: #a0522d;">=&gt;</span> <span style="color: #228b22;">GHC</span> <span style="color: #228b22;">Exactprint</span></code></h2>
+<p class="fragment appear">
+This has three main effects
+</p>
+
+<ul>
+<li class="fragment appear">Indirect tie-up of API Annotations is gone</li>
+<li class="fragment appear">We no longer have a two-phased approach</li>
+<li class="fragment appear">We no longer need to add default annotations</li>
+
+</ul>
+
+<aside class="notes">
+<p>
+This track is HIW, so I am going to talk about the implementation of
+the exact printing feature, and in particular
+</p>
+
+<p>
+Exact printing has been available for tool writers since GHC 7.10.
+</p>
+
+<p>
+What is changing from GHC 9.2 is that the locations of the additional
+items, trivia as they are called in Swift and Rust, are now captured
+more directly inside the GHC AST.
+</p>
+
+<p>
+This has three main effects, from the perspective of tool writers
+</p>
+
+<ul>
+<li>The indirect tie-up of the API Annotations (as they was called before)
+via a SrcSpan and constructor name is gone, the information is now
+captured directly in the AST.</li>
+
+<li>We no longer have a two-phased approach, where the as-parsed
+annotations are massaged into their delta variants before they can
+be manipulated or printed.</li>
+
+<li>We no longer need to add default annotations</li>
+
+</ul>
+
+<p>
+There are a other incidental changes too, like the old concept of API
+Annotations has now become Exact Print Annotations, and we have a lot
+more data structures.
+</p>
+
+</aside>
+
+</section>
+</section>
+<section>
+<section id="slide-org0935bc6">
+<h2 id="org0935bc6">Changes (GHC 9.2)</h2>
+<ul>
+<li>The Exact Print Annotations are now in-tree</li>
+<li><code class="src src-haskell">ghc<span style="color: #0000ff;">-</span>exactprint</code> is still the library to programme against</li>
+<li>This has been updated heavily for use with GHC 9.2.1</li>
+
+</ul>
+
+<aside class="notes">
+<p>
+I am going to talk about the changes from the perspective of a person
+using ghc-exactprint.
+</p>
+
+<p>
+You still have the same operational behaviour, e.g. changing the name
+of an identifier to have a different length will adjust the layout to
+keep the programme valid.
+</p>
+
+</aside>
+
+</section>
+</section>
+<section>
+<section id="slide-org2245c43">
+<h3 id="org2245c43">Aside: AST</h3>
+<ul>
+<li><code class="src src-haskell">Language<span style="color: #0000ff;">.</span>Haskell.Syntax</code></li>
+<li><code class="src src-haskell">GHC<span style="color: #0000ff;">.</span>Hs</code></li>
+
+</ul>
+
+<aside class="notes">
+<p>
+One of the other changes coming in GHC 9.2 is an internal
+restructuring of the modules making up GHC itself.
+</p>
+
+<p>
+For our purposes, this means that the old GHC.Hs has been split into
+</p>
+
+<ul>
+<li>Language.Haskell.Syntax</li>
+<li>GHC.Hs</li>
+
+</ul>
+
+<p>
+The first one is the completely general AST that can eventually be
+used for e.g. TH, and does not specify the interpretation of the TTG
+extension points.
+</p>
+
+<p>
+Terminology: When I use the word AST, I am talking about the
+<code class="src src-haskell"><span style="color: #228b22;">ParsedSource</span></code> which is defined in GHC.Hs,
+and includes the GHC-specific interpretation of the TTG extension
+points, which are used for the exact print annotations.
+</p>
+
+</aside>
+
+<div class="org-src-container">
+
+<pre  class="fragment appear" ><code trim><span style="color: #a020f0;">type</span> <span style="color: #228b22;">ParsedSource</span> <span style="color: #a0522d;">=</span> <span style="color: #228b22;">Located</span> <span style="color: #228b22;">HsModule</span>
+</code></pre>
+</div>
+
+</section>
+</section>
+<section>
+<section id="slide-org8ef68c3">
+<h3 id="org8ef68c3">XRec</h3>
+<div class="org-src-container">
+
+<pre  class="fragment appear" ><code trim><span style="color: #a020f0;">type</span> <span style="color: #228b22;">LHsExpr</span> p <span style="color: #a0522d;">=</span> <span style="color: #228b22;">XRec</span> p (<span style="color: #228b22;">HsExpr</span> p)
+</code></pre>
+</div>
+
+<div class="org-src-container">
+
+<pre  class="fragment roll-in" ><code trim><span style="color: #a020f0;">type</span> <span style="color: #a020f0;">family</span> <span style="color: #228b22;">XRec</span> p a <span style="color: #a0522d;">=</span> r <span style="color: #a0522d;">|</span> r <span style="color: #a0522d;">-&gt;</span> a
+<span style="color: #a020f0;">type</span> <span style="color: #a020f0;">instance</span> <span style="color: #228b22;">XRec</span> (<span style="color: #228b22;">GhcPass</span> p) a <span style="color: #a0522d;">=</span> <span style="color: #228b22;">GenLocated</span> (<span style="color: #228b22;">Anno</span> a) a
+<span style="color: #a020f0;">type</span> <span style="color: #a020f0;">family</span> <span style="color: #228b22;">Anno</span> a <span style="color: #a0522d;">=</span> b
+</code></pre>
+</div>
+
+<aside class="notes">
+<p>
+The first thing you will notice about the new AST is that it is
+littered with XRec types.
+</p>
+
+<p>
+So, XRec is a type family where the p and a parameters
+determine r, and in turn r determines a.
+</p>
+
+<p>
+The instance for (GhcPass p) and a maps to GenLocated (Anno a) a.
+Anno a is just a type family which maps an exact print annotation type
+based on the type being annotated. And this is likely to change, given
+that sometimes a given type needs a different annotation when it is
+used in a different context.
+</p>
+
+<p>
+This machinery for going from an XRec declaration to the actual
+annotation to be used is very awkward to use in practice, especially
+since the split into Language.Haskell.Syntax and GHC.Hs means the XRec
+definitions occur in one branch of the source tree and their
+resolutions in another, and not always in an easily searchable way, as
+the type family resolves on the expanded synonym form.
+</p>
+
+</aside>
+
+</section>
+</section>
+<section>
+<section id="slide-org95428bf">
+<h3 id="org95428bf">XRec example</h3>
+<p>
+Credit to Shayne Fletcher
+</p>
+
+<p>
+Specific choices for each syntatic element can then be made for GHC’s
+use of the parse tree and phase. For example, in GHC.Hs.Expr we have
+the following.
+</p>
+
+<div class="org-src-container">
+
+<pre  class="src src-haskell" ><code trim><span style="color: #a020f0;">type</span> <span style="color: #228b22;">LHsExpr</span> p <span style="color: #a0522d;">=</span> <span style="color: #228b22;">XRec</span> p (<span style="color: #228b22;">HsExpr</span> p)
+<span style="color: #a020f0;">type</span> <span style="color: #a020f0;">instance</span> <span style="color: #228b22;">Anno</span> (<span style="color: #228b22;">HsExpr</span> (<span style="color: #228b22;">GhcPass</span> pass)) <span style="color: #a0522d;">=</span> <span style="color: #228b22;">SrcSpanAnnA</span>
+</code></pre>
+</div>
+
+<p>
+To see how this works, consider what that means for the located
+expression type LHsExpr GhcPs in GHC.
+</p>
+
+<div class="org-src-container">
+
+<pre  class="src src-haskell" ><code trim><span style="color: #a0522d;">-</span> <span style="color: #228b22;">LHsExpr</span> <span style="color: #228b22;">GhcPs</span>
+<span style="color: #a0522d;">-</span> <span style="color: #228b22;">XRec</span> <span style="color: #228b22;">GhcPs</span> (<span style="color: #228b22;">HsExpr</span> <span style="color: #228b22;">GhcPs</span>)
+<span style="color: #a0522d;">-</span> <span style="color: #228b22;">GenLocated</span> (<span style="color: #228b22;">Anno</span> (<span style="color: #228b22;">HsExpr</span> <span style="color: #228b22;">GhcPs</span>)) (<span style="color: #228b22;">HsExpr</span> <span style="color: #228b22;">GhcPs</span>)
+<span style="color: #a0522d;">-</span> <span style="color: #228b22;">GenLocated</span> <span style="color: #228b22;">SrcSpanAnnA</span> (<span style="color: #228b22;">HsExpr</span> <span style="color: #228b22;">GhcPs</span>)
+<span style="color: #a0522d;">-</span> <span style="color: #228b22;">LocatedA</span> (<span style="color: #228b22;">HsExpr</span> <span style="color: #228b22;">GhcPs</span>))
+</code></pre>
+</div>
+
+<p>
+Expanding further we have
+</p>
+
+<div class="org-src-container">
+
+<pre  class="src src-haskell" ><code trim><span style="color: #a0522d;">-</span> <span style="color: #228b22;">GenLocated</span> <span style="color: #228b22;">SrcSpanAnnA</span> (<span style="color: #228b22;">HsExpr</span> <span style="color: #228b22;">GhcPs</span>)
+<span style="color: #a0522d;">-</span> <span style="color: #228b22;">GenLocated</span> (<span style="color: #228b22;">SrcAnn</span> <span style="color: #228b22;">AnnListItem</span>) (<span style="color: #228b22;">HsExpr</span> <span style="color: #228b22;">GhcPs</span>)
+<span style="color: #a0522d;">-</span> <span style="color: #228b22;">GenLocated</span> (<span style="color: #228b22;">SrcSpanAnn'</span> (<span style="color: #228b22;">EpAnn</span> <span style="color: #228b22;">AnnListItem</span>)) (<span style="color: #228b22;">HsExpr</span> <span style="color: #228b22;">GhcPs</span>)
+</code></pre>
+</div>
+
+</section>
+</section>
+<section>
+<section id="slide-orgb972904">
+<h3 id="orgb972904">Changes</h3>
+<p>
+Basic structure
+</p>
+
+
+
+</section>
+</section>
+<section>
+<section id="slide-org5acf2e7">
+<h2 id="org5acf2e7">Summary</h2>
+<ul>
+<li>The API Annotations have become Exact Print Annotations</li>
+<li>And have moved into the GHC source tree as first class citizens</li>
+<li>This has some benefits
+<ul>
+<li>We have tests with actual usage so that GHC developers can be more
+confident they have not broken something when they make changes.</li>
+<li>All the pieces are in one repository, so it is easier to (try to)
+understand the whole thing.</li>
+
+</ul></li>
+<li>The major benefit is it now allows incremental improvement, and
+removal of rough edges.</li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-org96108b4">
+<h2 id="org96108b4">The work is incomplete, changes to come (master)</h2>
+<p>
+<a href="https://gitlab.haskell.org/ghc/ghc/-/issues/20039">https://gitlab.haskell.org/ghc/ghc/-/issues/20039</a>
+</p>
+
+</section>
+</section>
+<section>
+<section id="slide-org83b9991">
+<h2 id="org83b9991">Resources</h2>
+<p>
+<a href="https://gitlab.haskell.org/ghc/ghc/-/wikis/api-annotations">https://gitlab.haskell.org/ghc/ghc/-/wikis/api-annotations</a>
+<a href="https://github.com/alanz/ghc-exactprint/tree/ghc-9.2">https://github.com/alanz/ghc-exactprint/tree/ghc-9.2</a>
+<a href="https://blog.shaynefletcher.org/2021/05/annotations-in-ghc.html">https://blog.shaynefletcher.org/2021/05/annotations-in-ghc.html</a>
+</p>
+</section>
+</section>
+</div>
+</div>
+<script src="file:///home/alanz/mysrc/github/alanz/hiw2021/dist/reveal.js"></script>
+<script src="file:///home/alanz/mysrc/github/alanz/hiw2021/plugin/markdown/markdown.js"></script>
+<script src="file:///home/alanz/mysrc/github/alanz/hiw2021/plugin/notes/notes.js"></script>
+
+
+<script>
+// Full list of configuration options available here:
+// https://github.com/hakimel/reveal.js#configuration
+Reveal.initialize({
+plugins: [RevealMarkdown,RevealNotes],
+width:1200, height:800, margin: 0.1, minScale:0.2, maxScale:2.5, slideNumber: 'c/t',
+multiplex: {
+    secret: '', // null if client
+    id: '', // id, obtained from socket.io server
+    url: '' // Location of socket.io server
+},
+
+// Optional libraries used to extend on reveal.js
+dependencies: [
+]
+});
+
+
+</script>
+</body>
+</html>
