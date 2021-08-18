@@ -26,9 +26,9 @@ annotations and their processing into GHC. Today I report on the
 results.
 
 And the goal is to give a 10,000ft overview to
-a) Orient GHC developers / API users who wonder what on earth this is
-b) Give some pointers for previous users of ghc-exactprint as to what
-   will have to change.
+- Orient GHC developers / API users who wonder what on earth this is
+- Give some pointers for previous users of ghc-exactprint as to what
+  will have to change.
 #+end_notes
 
 * Exact Printing
@@ -55,7 +55,12 @@ It does this by storing the exact original forms and locations of all
 parts of the original.
 
 Apart from the obvious things like keywords, comments and so on, basic
-things like literals also need special treatment.
+things like literals also need special treatment. <NEXT>
+
+So the compiler captures a literal 1 for all three versions, but we
+need to keep the original source.  <NEXT>
+
+Even simple things like pragmas are case insensitive.
 #+end_notes
 
 ** For Tooling
@@ -82,7 +87,7 @@ file.
 
 This is complicated by the fact that haskell is layout sensitive, so
 special care must be taken when moving a piece of code from one place
-to another where its indentation may change.
+to another where its indentation may change. <NEXT>
 #+end_notes
 
 
@@ -93,8 +98,21 @@ to another where its indentation may change.
 - src_haskell{ghc-exactprint} is still the library to programme against
 - This has been updated heavily for use with GHC 9.2.1
 
+#+begin_notes
+Exact printing has been available for tool writers since GHC 7.10. <NEXT>
 
-* src_haskell{ghc-exactprint => GHC Exactprint}
+What is changing from GHC 9.2 is that the locations of the additional
+items, trivia as they are called in Swift and Rust, are now captured
+directly inside the GHC AST. <NEXT>
+
+The ghc-exactprint library is still distributed via hackage, and is
+still the one to programme against, if you used it before now.  <NEXT>
+
+But it has been heavily updated, and as such gets a major version bump
+(to 1.1) and loses backward compatibility.
+#+end_notes
+
+* src_haskell{ghc-exactprint} changes
 
 #+ATTR_REVEAL: :frag (appear appear appear)
 - Indirect tie-up of API Annotations is gone
@@ -102,29 +120,23 @@ to another where its indentation may change.
 - We no longer need to add default annotations
 
 #+begin_notes
-Exact printing has been available for tool writers since GHC 7.10.
-
-What is changing from GHC 9.2 is that the locations of the additional
-items, trivia as they are called in Swift and Rust, are now captured
-more directly inside the GHC AST.
-
-This has three main effects, from the perspective of tool writers
+There are three main effects, from the perspective of tool writers <NEXT>
 
 - The indirect tie-up of the API Annotations (as they was called before)
   via a SrcSpan and constructor name is gone, the information is now
-  captured directly in the AST.
+  captured directly in the AST. <NEXT>
 
 - We no longer have a two-phased approach, where the as-parsed
   annotations are massaged into their delta variants before they can
-  be manipulated or printed.
+  be manipulated or printed. <NEXT>
 
 - We no longer need to add default annotations, recent GHC is tested
   to be able to re-parse any pretty printed output back to the same
   AST.
 
 There are a other incidental changes too, like the old concept of API
-Annotations has now become Exact Print Annotations, and we have a lot
-more data structures.
+Annotations has now become Exact Print Annotations, and we have
+tweaked some data structures.
 #+end_notes
 
 ** Aside: AST
@@ -154,12 +166,13 @@ extension points.
 Terminology: When I use the word AST, I am talking about the
 ParsedSource which is defined in GHC.Hs,
 and includes the GHC-specific interpretation of the TTG extension
-points, which are used for the exact print annotations.
+points, which are used for the exact print annotations <NEXT>.
+
+To be precise, ParsedSource, which is specialised on GhcPs
 #+end_notes
 
 ** XRec
 
-#+ATTR_REVEAL: :frag appear
 #+begin_src haskell
 type LHsExpr p = XRec p (HsExpr p)
 #+end_src
@@ -177,8 +190,8 @@ type instance Anno (HsExpr (GhcPass p)) = SrcSpanAnnA
 #+end_src
 
 #+begin_notes
-The first thing you will notice about the new AST is that it is
-littered with XRec types.
+Another thing you will notice about the new AST is that it is
+littered with XRec types. <NEXT>
 
 XRec is a type family where the p and a parameters determine r, and in
 turn r determines a.
@@ -187,14 +200,11 @@ The instance for (GhcPass p) and a maps to GenLocated (Anno a) a.
 Anno a is just a type family which maps an exact print annotation type
 based on the type being annotated. And this is likely to change, given
 that sometimes a given type needs a different annotation when it is
-used in a different context.
+used in a different context. <NEXT>
 
-This machinery for going from an XRec declaration to the actual
-annotation to be used is very awkward to use in practice, especially
-since the split into Language.Haskell.Syntax and GHC.Hs means the XRec
-definitions occur in one branch of the source tree and their
-resolutions in another, and not always in an easily searchable way, as
-the type family resolves on the expanded synonym form.
+So we have a particular kind of exact print annotation for the
+location in LHsExpr GhcPs.
+
 #+end_notes
 
 ** XRec example
@@ -219,8 +229,17 @@ Expanding further we have
 
 
 #+begin_notes
+This machinery for going from an XRec declaration to the actual
+annotation to be used is very awkward to use in practice, especially
+since the split into Language.Haskell.Syntax and GHC.Hs means the XRec
+definitions occur in one branch of the source tree and their
+resolutions in another, and not always in an easily searchable way, as
+the type family resolves on the expanded synonym form.
+
 To see how this works, consider what that means for the located
-expression type LHsExpr GhcPs in GHC.
+expression type LHsExpr GhcPs in GHC. <NEXT>
+
+Going into insane detail we have this, presented without comment
 #+end_notes
 
 * GHC Dev Survival Guide
@@ -230,8 +249,16 @@ All is not lost.
 #+ATTR_REVEAL: :frag appear
 src_haskell{A} is your friend
 
+
 #+ATTR_REVEAL: :frag appear
 #+begin_src haskell
+type instance Anno (HsExpr (GhcPass p)) = SrcSpanAnnA
+type LocatedA = GenLocated SrcSpanAnnA
+#+end_src
+
+#+ATTR_REVEAL: :frag appear
+#+begin_src haskell
+  Located    => LocatedA
   getLoc     => getLocA
   noLoc      => noLocA
   locA -- get SrcSpan from GenLocated payload
@@ -239,10 +266,25 @@ src_haskell{A} is your friend
   addLocM    => addLocMA
 #+end_src
 
+#+begin_notes
+All is not lost. <NEXT>
+
+A is your friend. <NEXT>
+
+The most common annotation type is the one shown for LHsExpr earlier,
+which is used for items appearing sequentially. The annotation tracks
+the basic bookkeeping of entry location and comments, as well as any
+trailing trivia based on being in a list, such as commas, semi-colons,
+and so on. We give it a type synonym ending in A, <NEXT>
+
+So in code you simply replace the normal variants of helper functions
+with ones have an A at the end.
+#+end_notes
+
 ** Changes: ghc-exactprint types
 
 #+begin_src haskell
-data Annotation = Ann
+data Annotation = Ann -- old ghc-exactprint type
   {
     -- interfacing up into the AST
     annEntryDelta      :: !DeltaPos
@@ -284,11 +326,45 @@ relative to any prior pieces, the comments are split into ones before
 the entry point and after, but still within the span of the given AST
 element.
 
-The annsDP is the location of the trivia fields indexed by KeywordId.
+The annsDP is the location of the trivia fields indexed by KeywordId. <NEXT>
 
-The Exact Print Annotations mirror this
-
+The Exact Print Annotations mirror this, <NEXT>
 But the Anchor is more flexible
+#+end_notes
+
+#+REVEAL: split
+#+begin_src haskell
+newtype DeltaPos = DP (Int,Int)
+#+end_src
+
+#+ATTR_REVEAL: :frag appear
+#+begin_src haskell
+data DeltaPos
+  = SameLine { deltaColumn :: !Int }
+  | DifferentLine
+      { deltaLine   :: !Int, -- ^ deltaLine should always be > 0
+        deltaColumn :: !Int
+      }
+#+end_src
+
+#+ATTR_REVEAL: :frag appear
+#+begin_src haskell
+data EpaLocation = EpaSpan RealSrcSpan
+                 | EpaDelta DeltaPos
+#+end_src
+
+#+begin_notes
+Another highly visible change is the DeltaPos type has become more meaningful.  <NEXT>
+
+And is mostly wrapped in an EpaLocation  <NEXT>
+
+Which is how we get rid of the delta phase. The parser gives us
+absolute locations, but we are able to insert delta ones strategically
+if we change anything.
+
+The actual printing step changes the absolutes into deltas immediately
+prior to output, so moving an entire tree only needs an adjustment to
+the topmost element.
 #+end_notes
 
 ** Annotation
@@ -305,45 +381,27 @@ data AnnsLet = AnnsLet { alLet :: EpaLocation,
                          alIn  :: EpaLocation }
 #+end_src
 
-#+REVEAL: split
-
-#+begin_src haskell
-type instance Anno (HsExpr (GhcPass p)) = SrcSpanAnnA
-#+end_src
-
-#+ATTR_REVEAL: :frag appear
-#+begin_src haskell
-type LocatedA = GenLocated SrcSpanAnnA
-#+end_src
-
-#+begin_src haskell
-newtype DeltaPos = DP (Int,Int)
-#+end_src
-
-#+ATTR_REVEAL: :frag appear
-#+begin_src haskell
-data DeltaPos
-  = SameLine { deltaColumn :: !Int }
-  | DifferentLine
-      { deltaLine   :: !Int, -- ^ deltaLine should always be > 0
-        deltaColumn :: !Int
-      }
-#+end_src
-
 #+begin_notes
-Here we have an example of the new annotations, where the trivia are
-explicitly named and managed in their own type.
+Here we give you a flavour of the new annotations in use.
+
+The XLet extension point for HsLet is mapped onto a standard
+exactprint annotation specialised to the AnnsLet data structure.
+
+This structure explicitly tracks the locations of the "let" and "in"
+keywords.
 #+end_notes
+
+
 
 * Code Modifications
 
 #+begin_src haskell
 doAddLocal = do
-  (d1:d2:_) <- hsDecls lp
+  (d1:d2:d3) <- hsDecls lp
   balanceComments d1 d2
   (d1',_) <- modifyValD (getLoc d1) d1 $ \_m d -> do
     return ((newDecl : d),Nothing)
-  replaceDecls lp [d1', d2]
+  replaceDecls lp [d1', d2, d3]
 #+end_src
 
 #+ATTR_REVEAL: :frag appear
@@ -356,8 +414,24 @@ doAddLocal = do
   replaceDecls lp [de1', d2', d3]
 #+end_src
 
-* Summary
+#+begin_notes
+A quick look at how changing ASTs with the ghc-exactprint Transform
+module is affected.  Here we see an operation to add a newDecl to the
+local binds of the first declaration in a file.
 
+The modifyValD provides a way to work with the individual Match's of a
+FunBind, based on the location of the one we care about, and gives us
+a list of local declarations to work with.  <NEXT>
+
+The new version is very similar, except the annotations are not
+updated in the Transform monad, so the various functions return
+updated AST fragments for further processing.
+
+And we have a helper function d1 that returns a one-space DeltaPos, so
+we had to rename the variable.
+#+end_notes
+
+* Summary
 
 #+ATTR_REVEAL: :frag (appear)
 - The API Annotations have become Exact Print Annotations

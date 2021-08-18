@@ -18,8 +18,8 @@
 <div class="slides">
 
 <section>
-<section id="slide-org3e22d5a">
-<h2 id="org3e22d5a">Exact Print Annotations in GHC</h2>
+<section id="slide-orge4cd19e">
+<h2 id="orge4cd19e">Exact Print Annotations in GHC</h2>
 <ul>
 <li>Alan Zimmerman</li>
 <li><a href="https://twitter.com/@alan_zimm"><code class="src src-haskell"><span style="color: #a0522d;">@</span>alan_zimm</code></a></li>
@@ -35,18 +35,21 @@ results.
 
 <p>
 And the goal is to give a 10,000ft overview to
-a) Orient GHC developers / API users who wonder what on earth this is
-b) Give some pointers for previous users of ghc-exactprint as to what
-   will have to change.
 </p>
+<ul>
+<li>Orient GHC developers / API users who wonder what on earth this is</li>
+<li>Give some pointers for previous users of ghc-exactprint as to what
+will have to change.</li>
+
+</ul>
 
 </aside>
 
 </section>
 </section>
 <section>
-<section id="slide-org26e9eeb">
-<h2 id="org26e9eeb">Exact Printing</h2>
+<section id="slide-orgfe6e319">
+<h2 id="orgfe6e319">Exact Printing</h2>
 <div class="org-src-container">
 
 <pre  class="fragment appear" ><code trim>0x01, 001, 0_01
@@ -78,7 +81,16 @@ parts of the original.
 
 <p>
 Apart from the obvious things like keywords, comments and so on, basic
-things like literals also need special treatment.
+things like literals also need special treatment. &lt;NEXT&gt;
+</p>
+
+<p>
+So the compiler captures a literal 1 for all three versions, but we
+need to keep the original source.  &lt;NEXT&gt;
+</p>
+
+<p>
+Even simple things like pragmas are case insensitive.
 </p>
 
 </aside>
@@ -86,8 +98,8 @@ things like literals also need special treatment.
 </section>
 </section>
 <section>
-<section id="slide-org3c8153b">
-<h3 id="org3c8153b">For Tooling</h3>
+<section id="slide-orga8f4f1a">
+<h3 id="orga8f4f1a">For Tooling</h3>
 <div class="org-src-container">
 
 <pre  class="src src-haskell" ><code trim><span style="color: #0000ff;">foo</span> xxx <span style="color: #a0522d;">=</span> <span style="color: #a020f0;">let</span> a <span style="color: #a0522d;">=</span> 1
@@ -116,7 +128,7 @@ file.
 <p>
 This is complicated by the fact that haskell is layout sensitive, so
 special care must be taken when moving a piece of code from one place
-to another where its indentation may change.
+to another where its indentation may change. &lt;NEXT&gt;
 </p>
 
 </aside>
@@ -125,8 +137,8 @@ to another where its indentation may change.
 </section>
 </section>
 <section>
-<section id="slide-org88215a7">
-<h2 id="org88215a7">Changes (GHC 9.2)</h2>
+<section id="slide-orgb04da1b">
+<h2 id="orgb04da1b">Changes (GHC 9.2)</h2>
 <ul>
 <li class="fragment appear">The Exact Print Annotations are now in-tree</li>
 <li class="fragment appear"><code class="src src-haskell">ghc<span style="color: #0000ff;">-</span>exactprint</code> is still the library to programme against</li>
@@ -134,12 +146,34 @@ to another where its indentation may change.
 
 </ul>
 
+<aside class="notes">
+<p>
+Exact printing has been available for tool writers since GHC 7.10. &lt;NEXT&gt;
+</p>
+
+<p>
+What is changing from GHC 9.2 is that the locations of the additional
+items, trivia as they are called in Swift and Rust, are now captured
+directly inside the GHC AST. &lt;NEXT&gt;
+</p>
+
+<p>
+The ghc-exactprint library is still distributed via hackage, and is
+still the one to programme against, if you used it before now.  &lt;NEXT&gt;
+</p>
+
+<p>
+But it has been heavily updated, and as such gets a major version bump
+(to 1.1) and loses backward compatibility.
+</p>
+
+</aside>
 
 </section>
 </section>
 <section>
-<section id="slide-org5f5a0f7">
-<h2 id="org5f5a0f7"><code class="src src-haskell">ghc<span style="color: #0000ff;">-</span>exactprint <span style="color: #a0522d;">=&gt;</span> <span style="color: #228b22;">GHC</span> <span style="color: #228b22;">Exactprint</span></code></h2>
+<section id="slide-org31aab73">
+<h2 id="org31aab73"><code class="src src-haskell">ghc<span style="color: #0000ff;">-</span>exactprint</code> changes</h2>
 <ul>
 <li class="fragment appear">Indirect tie-up of API Annotations is gone</li>
 <li class="fragment appear">We no longer have a two-phased approach</li>
@@ -149,27 +183,17 @@ to another where its indentation may change.
 
 <aside class="notes">
 <p>
-Exact printing has been available for tool writers since GHC 7.10.
-</p>
-
-<p>
-What is changing from GHC 9.2 is that the locations of the additional
-items, trivia as they are called in Swift and Rust, are now captured
-more directly inside the GHC AST.
-</p>
-
-<p>
-This has three main effects, from the perspective of tool writers
+There are three main effects, from the perspective of tool writers &lt;NEXT&gt;
 </p>
 
 <ul>
 <li>The indirect tie-up of the API Annotations (as they was called before)
 via a SrcSpan and constructor name is gone, the information is now
-captured directly in the AST.</li>
+captured directly in the AST. &lt;NEXT&gt;</li>
 
 <li>We no longer have a two-phased approach, where the as-parsed
 annotations are massaged into their delta variants before they can
-be manipulated or printed.</li>
+be manipulated or printed. &lt;NEXT&gt;</li>
 
 <li>We no longer need to add default annotations, recent GHC is tested
 to be able to re-parse any pretty printed output back to the same
@@ -179,8 +203,8 @@ AST.</li>
 
 <p>
 There are a other incidental changes too, like the old concept of API
-Annotations has now become Exact Print Annotations, and we have a lot
-more data structures.
+Annotations has now become Exact Print Annotations, and we have
+tweaked some data structures.
 </p>
 
 </aside>
@@ -188,8 +212,8 @@ more data structures.
 </section>
 </section>
 <section>
-<section id="slide-org0fed4d0">
-<h3 id="org0fed4d0">Aside: AST</h3>
+<section id="slide-org93c121f">
+<h3 id="org93c121f">Aside: AST</h3>
 <ul>
 <li><code class="src src-haskell">Language<span style="color: #0000ff;">.</span>Haskell.Syntax</code></li>
 <li><code class="src src-haskell">GHC<span style="color: #0000ff;">.</span>Hs</code></li>
@@ -229,7 +253,11 @@ extension points.
 Terminology: When I use the word AST, I am talking about the
 ParsedSource which is defined in GHC.Hs,
 and includes the GHC-specific interpretation of the TTG extension
-points, which are used for the exact print annotations.
+points, which are used for the exact print annotations &lt;NEXT&gt;.
+</p>
+
+<p>
+To be precise, ParsedSource, which is specialised on GhcPs
 </p>
 
 </aside>
@@ -237,11 +265,11 @@ points, which are used for the exact print annotations.
 </section>
 </section>
 <section>
-<section id="slide-orgce0a250">
-<h3 id="orgce0a250">XRec</h3>
+<section id="slide-orgaa97b7c">
+<h3 id="orgaa97b7c">XRec</h3>
 <div class="org-src-container">
 
-<pre  class="fragment appear" ><code trim><span style="color: #a020f0;">type</span> <span style="color: #228b22;">LHsExpr</span> p <span style="color: #a0522d;">=</span> <span style="color: #228b22;">XRec</span> p (<span style="color: #228b22;">HsExpr</span> p)
+<pre  class="src src-haskell" ><code trim><span style="color: #a020f0;">type</span> <span style="color: #228b22;">LHsExpr</span> p <span style="color: #a0522d;">=</span> <span style="color: #228b22;">XRec</span> p (<span style="color: #228b22;">HsExpr</span> p)
 </code></pre>
 </div>
 
@@ -261,8 +289,8 @@ points, which are used for the exact print annotations.
 
 <aside class="notes">
 <p>
-The first thing you will notice about the new AST is that it is
-littered with XRec types.
+Another thing you will notice about the new AST is that it is
+littered with XRec types. &lt;NEXT&gt;
 </p>
 
 <p>
@@ -275,16 +303,12 @@ The instance for (GhcPass p) and a maps to GenLocated (Anno a) a.
 Anno a is just a type family which maps an exact print annotation type
 based on the type being annotated. And this is likely to change, given
 that sometimes a given type needs a different annotation when it is
-used in a different context.
+used in a different context. &lt;NEXT&gt;
 </p>
 
 <p>
-This machinery for going from an XRec declaration to the actual
-annotation to be used is very awkward to use in practice, especially
-since the split into Language.Haskell.Syntax and GHC.Hs means the XRec
-definitions occur in one branch of the source tree and their
-resolutions in another, and not always in an easily searchable way, as
-the type family resolves on the expanded synonym form.
+So we have a particular kind of exact print annotation for the
+location in LHsExpr GhcPs.
 </p>
 
 </aside>
@@ -292,8 +316,8 @@ the type family resolves on the expanded synonym form.
 </section>
 </section>
 <section>
-<section id="slide-org0062b2b">
-<h3 id="org0062b2b">XRec example</h3>
+<section id="slide-orgf9b7bbf">
+<h3 id="orgf9b7bbf">XRec example</h3>
 <p>
 Credit to Shayne Fletcher
 </p>
@@ -322,8 +346,21 @@ Expanding further we have
 
 <aside class="notes">
 <p>
+This machinery for going from an XRec declaration to the actual
+annotation to be used is very awkward to use in practice, especially
+since the split into Language.Haskell.Syntax and GHC.Hs means the XRec
+definitions occur in one branch of the source tree and their
+resolutions in another, and not always in an easily searchable way, as
+the type family resolves on the expanded synonym form.
+</p>
+
+<p>
 To see how this works, consider what that means for the located
-expression type LHsExpr GhcPs in GHC.
+expression type LHsExpr GhcPs in GHC. &lt;NEXT&gt;
+</p>
+
+<p>
+Going into insane detail we have this, presented without comment
 </p>
 
 </aside>
@@ -331,8 +368,8 @@ expression type LHsExpr GhcPs in GHC.
 </section>
 </section>
 <section>
-<section id="slide-org3a846da">
-<h2 id="org3a846da">GHC Dev Survival Guide</h2>
+<section id="slide-org85a1843">
+<h2 id="org85a1843">GHC Dev Survival Guide</h2>
 <p>
 All is not lost.
 </p>
@@ -341,9 +378,18 @@ All is not lost.
 <code class="src src-haskell"><span style="color: #228b22;">A</span></code> is your friend
 </p>
 
+
 <div class="org-src-container">
 
-<pre  class="fragment appear" ><code trim><span style="color: #0000ff;">getLoc</span>     <span style="color: #0000ff;">=&gt;</span> getLocA
+<pre  class="fragment appear" ><code trim><span style="color: #a020f0;">type</span> <span style="color: #a020f0;">instance</span> <span style="color: #228b22;">Anno</span> (<span style="color: #228b22;">HsExpr</span> (<span style="color: #228b22;">GhcPass</span> p)) <span style="color: #a0522d;">=</span> <span style="color: #228b22;">SrcSpanAnnA</span>
+<span style="color: #a020f0;">type</span> <span style="color: #228b22;">LocatedA</span> <span style="color: #a0522d;">=</span> <span style="color: #228b22;">GenLocated</span> <span style="color: #228b22;">SrcSpanAnnA</span>
+</code></pre>
+</div>
+
+<div class="org-src-container">
+
+<pre  class="fragment appear" ><code trim><span style="color: #228b22;">Located</span>    <span style="color: #0000ff;">=&gt;</span> <span style="color: #228b22;">LocatedA</span>
+<span style="color: #0000ff;">getLoc</span>     <span style="color: #0000ff;">=&gt;</span> getLocA
 <span style="color: #0000ff;">noLoc</span>      <span style="color: #0000ff;">=&gt;</span> noLocA
 locA <span style="color: #b22222;">-- </span><span style="color: #b22222;">get SrcSpan from GenLocated payload</span>
 <span style="color: #0000ff;">setSrcSpan</span> <span style="color: #0000ff;">=&gt;</span> setSrcSpanA
@@ -351,14 +397,38 @@ locA <span style="color: #b22222;">-- </span><span style="color: #b22222;">get S
 </code></pre>
 </div>
 
+<aside class="notes">
+<p>
+All is not lost. &lt;NEXT&gt;
+</p>
+
+<p>
+A is your friend. &lt;NEXT&gt;
+</p>
+
+<p>
+The most common annotation type is the one shown for LHsExpr earlier,
+which is used for items appearing sequentially. The annotation tracks
+the basic bookkeeping of entry location and comments, as well as any
+trailing trivia based on being in a list, such as commas, semi-colons,
+and so on. We give it a type synonym ending in A, &lt;NEXT&gt;
+</p>
+
+<p>
+So in code you simply replace the normal variants of helper functions
+with ones have an A at the end.
+</p>
+
+</aside>
+
 </section>
 </section>
 <section>
-<section id="slide-orgc19c3ca">
-<h3 id="orgc19c3ca">Changes: ghc-exactprint types</h3>
+<section id="slide-orgd467f28">
+<h3 id="orgd467f28">Changes: ghc-exactprint types</h3>
 <div class="org-src-container">
 
-<pre  class="src src-haskell" ><code trim><span style="color: #a020f0;">data</span> <span style="color: #228b22;">Annotation</span> <span style="color: #a0522d;">=</span> <span style="color: #228b22;">Ann</span>
+<pre  class="src src-haskell" ><code trim><span style="color: #a020f0;">data</span> <span style="color: #228b22;">Annotation</span> <span style="color: #a0522d;">=</span> <span style="color: #228b22;">Ann</span> <span style="color: #b22222;">-- </span><span style="color: #b22222;">old ghc-exactprint type</span>
   {
     <span style="color: #b22222;">-- </span><span style="color: #b22222;">interfacing up into the AST</span>
     annEntryDelta      <span style="color: #a0522d;">::</span> <span style="color: #a0522d;">!</span><span style="color: #228b22;">DeltaPos</span>
@@ -410,55 +480,18 @@ element.
 </p>
 
 <p>
-The annsDP is the location of the trivia fields indexed by KeywordId.
+The annsDP is the location of the trivia fields indexed by KeywordId. &lt;NEXT&gt;
 </p>
 
 <p>
-The Exact Print Annotations mirror this
-</p>
-
-<p>
+The Exact Print Annotations mirror this, &lt;NEXT&gt;
 But the Anchor is more flexible
 </p>
 
 </aside>
 
 </section>
-</section>
-<section>
-<section id="slide-orgce5fcbf">
-<h3 id="orgce5fcbf">Annotation</h3>
-<div class="org-src-container">
-
-<pre  class="src src-haskell" ><code trim><span style="color: #a0522d;">|</span> <span style="color: #228b22;">HsLet</span> (<span style="color: #228b22;">XLet</span> p)
-        (<span style="color: #228b22;">HsLocalBinds</span> p)
-        (<span style="color: #228b22;">LHsExpr</span>  p)
-</code></pre>
-</div>
-
-<div class="org-src-container">
-
-<pre  class="src src-haskell" ><code trim><span style="color: #a020f0;">type</span> <span style="color: #a020f0;">instance</span> <span style="color: #228b22;">XLet</span> <span style="color: #228b22;">GhcPs</span> <span style="color: #a0522d;">=</span> <span style="color: #228b22;">EpAnn</span> <span style="color: #228b22;">AnnsLet</span>
-<span style="color: #a020f0;">data</span> <span style="color: #228b22;">AnnsLet</span> <span style="color: #a0522d;">=</span> <span style="color: #228b22;">AnnsLet</span> { alLet <span style="color: #a0522d;">::</span> <span style="color: #228b22;">EpaLocation</span>,
-                         alIn  <span style="color: #a0522d;">::</span> <span style="color: #228b22;">EpaLocation</span> }
-</code></pre>
-</div>
-
-</section>
-<section id="slide-orgce5fcbf-split">
-
-<div class="org-src-container">
-
-<pre  class="src src-haskell" ><code trim><span style="color: #a020f0;">type</span> <span style="color: #a020f0;">instance</span> <span style="color: #228b22;">Anno</span> (<span style="color: #228b22;">HsExpr</span> (<span style="color: #228b22;">GhcPass</span> p)) <span style="color: #a0522d;">=</span> <span style="color: #228b22;">SrcSpanAnnA</span>
-</code></pre>
-</div>
-
-<div class="org-src-container">
-
-<pre  class="fragment appear" ><code trim><span style="color: #a020f0;">type</span> <span style="color: #228b22;">LocatedA</span> <span style="color: #a0522d;">=</span> <span style="color: #228b22;">GenLocated</span> <span style="color: #228b22;">SrcSpanAnnA</span>
-</code></pre>
-</div>
-
+<section id="slide-orgd467f28-split">
 <div class="org-src-container">
 
 <pre  class="src src-haskell" ><code trim><span style="color: #a020f0;">newtype</span> <span style="color: #228b22;">DeltaPos</span> <span style="color: #a0522d;">=</span> <span style="color: #228b22;">DP</span> (<span style="color: #228b22;">Int</span>,<span style="color: #228b22;">Int</span>)
@@ -476,10 +509,32 @@ But the Anchor is more flexible
 </code></pre>
 </div>
 
+<div class="org-src-container">
+
+<pre  class="fragment appear" ><code trim><span style="color: #a020f0;">data</span> <span style="color: #228b22;">EpaLocation</span> <span style="color: #a0522d;">=</span> <span style="color: #228b22;">EpaSpan</span> <span style="color: #228b22;">RealSrcSpan</span>
+                 <span style="color: #a0522d;">|</span> <span style="color: #228b22;">EpaDelta</span> <span style="color: #228b22;">DeltaPos</span>
+</code></pre>
+</div>
+
 <aside class="notes">
 <p>
-Here we have an example of the new annotations, where the trivia are
-explicitly named and managed in their own type.
+Another highly visible change is the DeltaPos type has become more meaningful.  &lt;NEXT&gt;
+</p>
+
+<p>
+And is mostly wrapped in an EpaLocation  &lt;NEXT&gt;
+</p>
+
+<p>
+Which is how we get rid of the delta phase. The parser gives us
+absolute locations, but we are able to insert delta ones strategically
+if we change anything.
+</p>
+
+<p>
+The actual printing step changes the absolutes into deltas immediately
+prior to output, so moving an entire tree only needs an adjustment to
+the topmost element.
 </p>
 
 </aside>
@@ -487,16 +542,56 @@ explicitly named and managed in their own type.
 </section>
 </section>
 <section>
-<section id="slide-org220a8a7">
-<h2 id="org220a8a7">Code Modifications</h2>
+<section id="slide-org90d140f">
+<h3 id="org90d140f">Annotation</h3>
+<div class="org-src-container">
+
+<pre  class="src src-haskell" ><code trim><span style="color: #a0522d;">|</span> <span style="color: #228b22;">HsLet</span> (<span style="color: #228b22;">XLet</span> p)
+        (<span style="color: #228b22;">HsLocalBinds</span> p)
+        (<span style="color: #228b22;">LHsExpr</span>  p)
+</code></pre>
+</div>
+
+<div class="org-src-container">
+
+<pre  class="src src-haskell" ><code trim><span style="color: #a020f0;">type</span> <span style="color: #a020f0;">instance</span> <span style="color: #228b22;">XLet</span> <span style="color: #228b22;">GhcPs</span> <span style="color: #a0522d;">=</span> <span style="color: #228b22;">EpAnn</span> <span style="color: #228b22;">AnnsLet</span>
+<span style="color: #a020f0;">data</span> <span style="color: #228b22;">AnnsLet</span> <span style="color: #a0522d;">=</span> <span style="color: #228b22;">AnnsLet</span> { alLet <span style="color: #a0522d;">::</span> <span style="color: #228b22;">EpaLocation</span>,
+                         alIn  <span style="color: #a0522d;">::</span> <span style="color: #228b22;">EpaLocation</span> }
+</code></pre>
+</div>
+
+<aside class="notes">
+<p>
+Here we give you a flavour of the new annotations in use.
+</p>
+
+<p>
+The XLet extension point for HsLet is mapped onto a standard
+exactprint annotation specialised to the AnnsLet data structure.
+</p>
+
+<p>
+This structure explicitly tracks the locations of the "let" and "in"
+keywords.
+</p>
+
+</aside>
+
+
+
+</section>
+</section>
+<section>
+<section id="slide-org3a896ba">
+<h2 id="org3a896ba">Code Modifications</h2>
 <div class="org-src-container">
 
 <pre  class="src src-haskell" ><code trim><span style="color: #0000ff;">doAddLocal</span> <span style="color: #a0522d;">=</span> <span style="color: #a020f0;">do</span>
-  (d1<span style="color: #228b22;">:</span>d2<span style="color: #228b22;">:</span><span style="color: #a020f0;">_</span>) <span style="color: #a0522d;">&lt;-</span> hsDecls lp
+  (d1<span style="color: #228b22;">:</span>d2<span style="color: #228b22;">:</span>d3) <span style="color: #a0522d;">&lt;-</span> hsDecls lp
   balanceComments d1 d2
   (d1',<span style="color: #a020f0;">_</span>) <span style="color: #a0522d;">&lt;-</span> modifyValD (getLoc d1) d1 <span style="color: #a0522d;">$</span> <span style="color: #a0522d;">\</span>_m d <span style="color: #a0522d;">-&gt;</span> <span style="color: #a020f0;">do</span>
     return ((newDecl <span style="color: #228b22;">:</span> d),<span style="color: #228b22;">Nothing</span>)
-  replaceDecls lp [d1', d2]
+  replaceDecls lp [d1', d2, d3]
 </code></pre>
 </div>
 
@@ -511,11 +606,37 @@ explicitly named and managed in their own type.
 </code></pre>
 </div>
 
+<aside class="notes">
+<p>
+A quick look at how changing ASTs with the ghc-exactprint Transform
+module is affected.  Here we see an operation to add a newDecl to the
+local binds of the first declaration in a file.
+</p>
+
+<p>
+The modifyValD provides a way to work with the individual Match's of a
+FunBind, based on the location of the one we care about, and gives us
+a list of local declarations to work with.  &lt;NEXT&gt;
+</p>
+
+<p>
+The new version is very similar, except the annotations are not
+updated in the Transform monad, so the various functions return
+updated AST fragments for further processing.
+</p>
+
+<p>
+And we have a helper function d1 that returns a one-space DeltaPos, so
+we had to rename the variable.
+</p>
+
+</aside>
+
 </section>
 </section>
 <section>
-<section id="slide-orge004fc1">
-<h2 id="orge004fc1">Summary</h2>
+<section id="slide-orgda1d442">
+<h2 id="orgda1d442">Summary</h2>
 <ul>
 <li class="fragment appear">The API Annotations have become Exact Print Annotations</li>
 <li class="fragment appear">And have moved into the GHC source tree as first class citizens</li>
@@ -533,8 +654,8 @@ removal of rough edges.</li>
 </section>
 </section>
 <section>
-<section id="slide-orgf836eeb">
-<h2 id="orgf836eeb">The work is incomplete, changes to come (master)</h2>
+<section id="slide-orgf86c1d9">
+<h2 id="orgf86c1d9">The work is incomplete, changes to come (master)</h2>
 <p>
 <a href="https://gitlab.haskell.org/ghc/ghc/-/issues/20039">https://gitlab.haskell.org/ghc/ghc/-/issues/20039</a>
 </p>
@@ -542,8 +663,8 @@ removal of rough edges.</li>
 </section>
 </section>
 <section>
-<section id="slide-org1a8585f">
-<h2 id="org1a8585f">Resources</h2>
+<section id="slide-orga7bb7a4">
+<h2 id="orga7bb7a4">Resources</h2>
 <p>
 <a href="https://gitlab.haskell.org/ghc/ghc/-/wikis/api-annotations">https://gitlab.haskell.org/ghc/ghc/-/wikis/api-annotations</a>
 <a href="https://github.com/alanz/ghc-exactprint/tree/ghc-9.2">https://github.com/alanz/ghc-exactprint/tree/ghc-9.2</a>
