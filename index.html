@@ -12,14 +12,25 @@
 <link rel="stylesheet" href="file:///home/alanz/mysrc/github/alanz/hiw2021/dist/theme/white.css" id="theme"/>
 
 <link rel="stylesheet" href="./local.css"/>
+
+<!-- If the query includes 'print-pdf', include the PDF print sheet -->
+<script>
+    if( window.location.search.match( /print-pdf/gi ) ) {
+        var link = document.createElement( 'link' );
+        link.rel = 'stylesheet';
+        link.type = 'text/css';
+        link.href = 'file:///home/alanz/mysrc/github/alanz/hiw2021/css/print/pdf.css';
+        document.getElementsByTagName( 'head' )[0].appendChild( link );
+    }
+</script>
 </head>
 <body>
 <div class="reveal">
 <div class="slides">
 
 <section>
-<section id="slide-orge4cd19e">
-<h2 id="orge4cd19e">Exact Print Annotations in GHC</h2>
+<section id="slide-org7ac90c8">
+<h2 id="org7ac90c8">Exact Print Annotations in GHC</h2>
 <ul>
 <li>Alan Zimmerman</li>
 <li><a href="https://twitter.com/@alan_zimm"><code class="src src-haskell"><span style="color: #a0522d;">@</span>alan_zimm</code></a></li>
@@ -48,8 +59,8 @@ will have to change.</li>
 </section>
 </section>
 <section>
-<section id="slide-orgfe6e319">
-<h2 id="orgfe6e319">Exact Printing</h2>
+<section id="slide-org3cdd521">
+<h2 id="org3cdd521">Exact Printing</h2>
 <div class="org-src-container">
 
 <pre  class="fragment appear" ><code trim>0x01, 001, 0_01
@@ -98,8 +109,8 @@ Even simple things like pragmas are case insensitive.
 </section>
 </section>
 <section>
-<section id="slide-orga8f4f1a">
-<h3 id="orga8f4f1a">For Tooling</h3>
+<section id="slide-org83bd63d">
+<h3 id="org83bd63d">For Tooling</h3>
 <div class="org-src-container">
 
 <pre  class="src src-haskell" ><code trim><span style="color: #0000ff;">foo</span> xxx <span style="color: #a0522d;">=</span> <span style="color: #a020f0;">let</span> a <span style="color: #a0522d;">=</span> 1
@@ -137,8 +148,8 @@ to another where its indentation may change. &lt;NEXT&gt;
 </section>
 </section>
 <section>
-<section id="slide-orgb04da1b">
-<h2 id="orgb04da1b">Changes (GHC 9.2)</h2>
+<section id="slide-org368acdb">
+<h2 id="org368acdb">Changes (GHC 9.2)</h2>
 <ul>
 <li class="fragment appear">The Exact Print Annotations are now in-tree</li>
 <li class="fragment appear"><code class="src src-haskell">ghc<span style="color: #0000ff;">-</span>exactprint</code> is still the library to programme against</li>
@@ -172,8 +183,8 @@ But it has been heavily updated, and as such gets a major version bump
 </section>
 </section>
 <section>
-<section id="slide-org31aab73">
-<h2 id="org31aab73"><code class="src src-haskell">ghc<span style="color: #0000ff;">-</span>exactprint</code> changes</h2>
+<section id="slide-org55d6082">
+<h2 id="org55d6082"><code class="src src-haskell">ghc<span style="color: #0000ff;">-</span>exactprint</code> changes</h2>
 <ul>
 <li class="fragment appear">Indirect tie-up of API Annotations is gone</li>
 <li class="fragment appear">We no longer have a two-phased approach</li>
@@ -212,8 +223,8 @@ tweaked some data structures.
 </section>
 </section>
 <section>
-<section id="slide-org93c121f">
-<h3 id="org93c121f">Aside: AST</h3>
+<section id="slide-org2cc1ec9">
+<h3 id="org2cc1ec9">Aside: AST</h3>
 <ul>
 <li><code class="src src-haskell">Language<span style="color: #0000ff;">.</span>Haskell.Syntax</code></li>
 <li><code class="src src-haskell">GHC<span style="color: #0000ff;">.</span>Hs</code></li>
@@ -265,8 +276,8 @@ To be precise, ParsedSource, which is specialised on GhcPs
 </section>
 </section>
 <section>
-<section id="slide-orgaa97b7c">
-<h3 id="orgaa97b7c">XRec</h3>
+<section id="slide-orgbf359a7">
+<h3 id="orgbf359a7">XRec</h3>
 <div class="org-src-container">
 
 <pre  class="src src-haskell" ><code trim><span style="color: #a020f0;">type</span> <span style="color: #228b22;">LHsExpr</span> p <span style="color: #a0522d;">=</span> <span style="color: #228b22;">XRec</span> p (<span style="color: #228b22;">HsExpr</span> p)
@@ -316,8 +327,8 @@ location in LHsExpr GhcPs.
 </section>
 </section>
 <section>
-<section id="slide-orgf9b7bbf">
-<h3 id="orgf9b7bbf">XRec example</h3>
+<section id="slide-org8e96e4a">
+<h3 id="org8e96e4a">XRec example</h3>
 <p>
 Credit to Shayne Fletcher
 </p>
@@ -368,8 +379,8 @@ Going into insane detail we have this, presented without comment
 </section>
 </section>
 <section>
-<section id="slide-org85a1843">
-<h2 id="org85a1843">GHC Dev Survival Guide</h2>
+<section id="slide-orged56fa4">
+<h2 id="orged56fa4">GHC Dev Survival Guide</h2>
 <p>
 All is not lost.
 </p>
@@ -424,8 +435,8 @@ with ones have an A at the end.
 </section>
 </section>
 <section>
-<section id="slide-orgd467f28">
-<h3 id="orgd467f28">Changes: ghc-exactprint types</h3>
+<section id="slide-org3d4251d">
+<h3 id="org3d4251d">Changes: ghc-exactprint types</h3>
 <div class="org-src-container">
 
 <pre  class="src src-haskell" ><code trim><span style="color: #a020f0;">data</span> <span style="color: #228b22;">Annotation</span> <span style="color: #a0522d;">=</span> <span style="color: #228b22;">Ann</span> <span style="color: #b22222;">-- </span><span style="color: #b22222;">old ghc-exactprint type</span>
@@ -491,7 +502,7 @@ But the Anchor is more flexible
 </aside>
 
 </section>
-<section id="slide-orgd467f28-split">
+<section id="slide-org3d4251d-split">
 <div class="org-src-container">
 
 <pre  class="src src-haskell" ><code trim><span style="color: #a020f0;">newtype</span> <span style="color: #228b22;">DeltaPos</span> <span style="color: #a0522d;">=</span> <span style="color: #228b22;">DP</span> (<span style="color: #228b22;">Int</span>,<span style="color: #228b22;">Int</span>)
@@ -542,8 +553,8 @@ the topmost element.
 </section>
 </section>
 <section>
-<section id="slide-org90d140f">
-<h3 id="org90d140f">Annotation</h3>
+<section id="slide-org00f8c3a">
+<h3 id="org00f8c3a">Annotation</h3>
 <div class="org-src-container">
 
 <pre  class="src src-haskell" ><code trim><span style="color: #a0522d;">|</span> <span style="color: #228b22;">HsLet</span> (<span style="color: #228b22;">XLet</span> p)
@@ -582,8 +593,8 @@ keywords.
 </section>
 </section>
 <section>
-<section id="slide-org3a896ba">
-<h2 id="org3a896ba">Code Modifications</h2>
+<section id="slide-orgf7ff7dc">
+<h2 id="orgf7ff7dc">Code Modifications</h2>
 <div class="org-src-container">
 
 <pre  class="src src-haskell" ><code trim><span style="color: #0000ff;">doAddLocal</span> <span style="color: #a0522d;">=</span> <span style="color: #a020f0;">do</span>
@@ -635,8 +646,8 @@ we had to rename the variable.
 </section>
 </section>
 <section>
-<section id="slide-orgda1d442">
-<h2 id="orgda1d442">Summary</h2>
+<section id="slide-org97b344f">
+<h2 id="org97b344f">Summary</h2>
 <ul>
 <li class="fragment appear">The API Annotations have become Exact Print Annotations</li>
 <li class="fragment appear">And have moved into the GHC source tree as first class citizens</li>
@@ -654,8 +665,8 @@ removal of rough edges.</li>
 </section>
 </section>
 <section>
-<section id="slide-orgf86c1d9">
-<h2 id="orgf86c1d9">The work is incomplete, changes to come (master)</h2>
+<section id="slide-org9384f6a">
+<h2 id="org9384f6a">The work is incomplete, changes to come (master)</h2>
 <p>
 <a href="https://gitlab.haskell.org/ghc/ghc/-/issues/20039">https://gitlab.haskell.org/ghc/ghc/-/issues/20039</a>
 </p>
@@ -663,8 +674,8 @@ removal of rough edges.</li>
 </section>
 </section>
 <section>
-<section id="slide-orga7bb7a4">
-<h2 id="orga7bb7a4">Resources</h2>
+<section id="slide-org561582c">
+<h2 id="org561582c">Resources</h2>
 <p>
 <a href="https://gitlab.haskell.org/ghc/ghc/-/wikis/api-annotations">https://gitlab.haskell.org/ghc/ghc/-/wikis/api-annotations</a>
 <a href="https://github.com/alanz/ghc-exactprint/tree/ghc-9.2">https://github.com/alanz/ghc-exactprint/tree/ghc-9.2</a>
